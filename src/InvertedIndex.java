@@ -21,7 +21,6 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.log4j.Logger;
@@ -32,6 +31,8 @@ public class InvertedIndex extends Configured implements Tool {
 	private static final String WORD_MARKER = "W"; // Used to indicate that a string is a word.
 	private static final String URL_MARKER = "U"; // Used to indicate that a string is a URL.
 	private static final String WORD_TYPE_SEPERATOR = "#";
+	private static final String WORD_SKIP_PATTERNS = "word.skip.patterns"; // system variable specifying if a list of word patterns to skip is provided.
+	private static final String SKIP_PATTERNS_FLAGE = "-skip"; // command line argument specifying if the skip patter functionality should be active. 
 
 	public static void main(String[] args) throws Exception {
 		int res = ToolRunner.run(new InvertedIndex(), args);
@@ -41,17 +42,17 @@ public class InvertedIndex extends Configured implements Tool {
 	public int run(String[] args) throws Exception {
 		Job job = Job.getInstance(getConf(), "invertedindex");
 		for (int i = 0; i < args.length; i += 1) {
-			if ("-skip".equals(args[i])) {
-				job.getConfiguration().setBoolean("wordcount.skip.patterns", true);
+			if (SKIP_PATTERNS_FLAGE.equals(args[i])) {
+				// The skip word patterns functionality is active, load the list of word patterns from the specified path.
+				LOG.info("Skip word patterns functionality is active.");
+				job.getConfiguration().setBoolean(WORD_SKIP_PATTERNS, true);
 				i += 1;
 				job.addCacheFile(new Path(args[i]).toUri());
-				// this demonstrates logging
 				LOG.info("Added file to the distributed cache: " + args[i]);
 			}
 		}
 
 		job.setJarByClass(this.getClass());
-		// Use TextInputFormat, the default unless job.setInputFormatClass is used
 		FileInputFormat.addInputPath(job, new Path(args[0]));
 		FileOutputFormat.setOutputPath(job, new Path(args[1]));
 		job.setMapperClass(InvertedIndexMap.class);
@@ -77,9 +78,11 @@ public class InvertedIndex extends Configured implements Tool {
 			} else {
 				context.getInputSplit().toString();
 			}
+			
 			Configuration config = context.getConfiguration();
-			this.caseSensitive = config.getBoolean("wordcount.case.sensitive", false);
-			if (config.getBoolean("wordcount.skip.patterns", false)) {
+			this.caseSensitive = config.getBoolean("wordcount.case.sensitive", false); // Get the case sensitive system variable from the command line execution variable.
+			if (config.getBoolean(WORD_SKIP_PATTERNS, false)) {
+				// The system variable is true, get the list of patterns to skip and add them to the list.
 				URI[] localPaths = context.getCacheFiles();
 				parseSkipFile(localPaths[0]);
 			}
@@ -115,12 +118,13 @@ public class InvertedIndex extends Configured implements Tool {
 				line = line.toLowerCase();
 			}
 
-			// Get the site URL that is always the first word of the line.
+			// Get the owner site URL (the site the word was taken from) that is always the first word of the line.
 			int firstWordIdx = line.indexOf(" ");
 			String ownerSite = line.substring(0, firstWordIdx);
 			Text site = new Text(ownerSite);
 			line = line.replaceFirst(ownerSite, "");
 			
+			// Go over the words and process according to type.
 			String [] words = WORD_BOUNDARY.split(line);			
 			for (int i = 1; i < words.length; i++) {
 				String word = words[i]; // Get the current word to process.
@@ -131,7 +135,7 @@ public class InvertedIndex extends Configured implements Tool {
 				Text currentWord = null;
 				UrlValidator urlValidator = new UrlValidator();
 				if (urlValidator.isValid(word)) {
-					// The word is a URL. Mark it as a one and count its occurrence.
+					// The word is a URL. Mark it as one and count its occurrence.
 					currentWord = new Text(word + WORD_TYPE_SEPERATOR + URL_MARKER);
 					context.write(currentWord, one);
 				} else {
@@ -152,9 +156,11 @@ public class InvertedIndex extends Configured implements Tool {
 			String wordType = wordParts[1];
 			switch (wordType) {
 			case URL_MARKER:
+				// When the word is a URL we should collect the number of occurrences the URL was referenced.
 				result = collectURLOccurences(occurences);
 				break;
 			case WORD_MARKER:
+				// When the word is regular, we should collect all the sites the word was taken from (owner sites).
 				result = collectWordSites(occurences);				
 				break;
 			};
