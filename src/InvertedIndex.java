@@ -59,6 +59,7 @@ public class InvertedIndex extends Configured implements Tool {
 		job.setReducerClass(InvertedIndexReduce.class);
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(Text.class);
+		job.getConfiguration().set("mapreduce.output.textoutputformat.separator", ","); // Change output format from TSV to CSV.
 
 		return job.waitForCompletion(true) ? 0 : 1;
 	}
