@@ -70,7 +70,8 @@ public class InvertedIndex extends Configured implements Tool {
 		// Create a regular expression pattern used to parse each line of input text on word boundaries. Word boundaries include spaces, tabs, and punctuation.
 		private static final Pattern WORD_BOUNDARY = Pattern.compile(" ");
 
-		protected void setup(Mapper.Context context) throws IOException, InterruptedException {
+		@Override
+		protected void setup(Mapper<LongWritable, Text, Text, Text>.Context context) throws IOException, InterruptedException {
 			if (context.getInputSplit() instanceof FileSplit) {
 				((FileSplit) context.getInputSplit()).getPath().toString();
 			} else {
@@ -86,15 +87,24 @@ public class InvertedIndex extends Configured implements Tool {
 
 		private void parseSkipFile(URI patternsURI) {
 			LOG.info("Added file to the distributed cache: " + patternsURI);
+			
+			BufferedReader fis = null;
 			try {
-				BufferedReader fis = new BufferedReader(new FileReader(new File(patternsURI.getPath()).getName()));
+				fis = new BufferedReader(new FileReader(new File(patternsURI.getPath()).getName()));
 				String pattern;
 				while ((pattern = fis.readLine()) != null) {
 					patternsToSkip.add(pattern);
 				}
 			} catch (IOException ioe) {
-				System.err.println("Caught exception while parsing the cached file '"
-						+ patternsURI + "' : " + StringUtils.stringifyException(ioe));
+				LOG.error("Caught exception while parsing the cached file " + patternsURI + ".", ioe);
+			} finally {
+				if (fis != null) {
+					try {
+						fis.close();
+					} catch (IOException e) {
+						LOG.error("Failed to close pattern file. ", e);
+					}
+				}
 			}
 		}
 
@@ -109,7 +119,8 @@ public class InvertedIndex extends Configured implements Tool {
 			int firstWordIdx = line.indexOf(" ");
 			String ownerSite = line.substring(0, firstWordIdx);
 			Text site = new Text(ownerSite);
-			line = line.replaceFirst(ownerSite, "");			
+			line = line.replaceFirst(ownerSite, "");
+			
 			String [] words = WORD_BOUNDARY.split(line);			
 			for (int i = 1; i < words.length; i++) {
 				String word = words[i]; // Get the current word to process.
