@@ -25,6 +25,39 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.log4j.Logger;
 
+/*
+ * The class contain a Map Reduce program that builds an inverted index (the program is based on the Cloudera World Count v3.0 example).
+ * The program takes as input log files (each file associated to one owner web site) which contain words and outputs the association between words and web sites in a cross file analysis. 
+ * The log format is as follows:
+ * 		1. The log contains lines with words delimited by space.
+ *		2. The first word of each line is the web site that is associated with the file (owner site).
+ *		3. All the other words in the line are words collected from the owner site.
+ * 
+ * Input example:
+ * 		http://recode.net  recode home news reviews events
+ * 		http://recode.net wordpress.com
+ * 
+ * The output format is as follows:
+ * 		1. A file in the form of CSV, where the first column is the key and the rest are the values.
+ * 		2. If the first column is a word then the following columns are web sites the word resides in.
+ * 		3. If the first column is a URL the second column will contain the number of occurrences that the URL was found.
+ * 
+ * Output example:
+ * 		about,http://www.iht.com,http://www.nytimes.com,http://espn.go.com,http://recode.net,http://www.cnn.com
+ * 		http://xgames.com/,1
+ * 		https://fivethirtyeight.com/datalab/what-kyrie-irvings-injury-could-mean-for-the-cavs-chances/,3
+ *
+ * Execution format: hadoop jar JAR_NAME.jar InvertedIndex -Dwordcount.case.sensitive=boolean INPUT_FOLDER OUTPUT_FOLDER -skip STOP_WORDS_FILE.txt
+ * 		1. -Dwordcount.case.sensitive=boolean - Optional case sensitive boolean variable specifying if the word aggregation should be case sensitive (default = false).
+ * 		2. INPUT_FOLDER - The path to the input folder for the job (mandatory).
+ * 		3. OUTPUT_FOLDER - The path to the output results folder (mandatory).
+ * 		4. -skip - Optional argument which specifies if the skip pattern functionality should be active. If the argument exists than the STOP_WORDS_FILE.txt is mandatory.
+ * 		5. STOP_WORDS_FILE.txt - A path to the text file from whom to load the list of word patterns that should be ignored during the job (mandatory if the -skip argument exists).
+ * 								 Each line in the file should contain a single word which should be ignored when encountered during the job (e.g. a,and,or,!).
+ *
+ * Comments: The tool uses an external jar for URL analysis (org.apache.commons.validator.routines.UrlValidator). This jar should be added upon execution.
+ *
+ */
 public class InvertedIndex extends Configured implements Tool {
 
 	private static final Logger LOG = Logger.getLogger(InvertedIndex.class);
@@ -32,7 +65,7 @@ public class InvertedIndex extends Configured implements Tool {
 	private static final String URL_MARKER = "U"; // Used to indicate that a string is a URL.
 	private static final String WORD_TYPE_SEPERATOR = "#";
 	private static final String WORD_SKIP_PATTERNS = "word.skip.patterns"; // system variable specifying if a list of word patterns to skip is provided.
-	private static final String SKIP_PATTERNS_FLAGE = "-skip"; // command line argument specifying if the skip patter functionality should be active. 
+	private static final String SKIP_PATTERNS_FLAGE = "-skip"; // command line argument specifying if the skip pattern functionality should be active. 
 
 	public static void main(String[] args) throws Exception {
 		int res = ToolRunner.run(new InvertedIndex(), args);
