@@ -162,7 +162,7 @@ public class InvertedIndex extends Configured implements Tool {
 				break;
 			case WORD_MARKER:
 				// When the word is regular, we should collect all the sites the word was taken from (owner sites).
-				result = collectWordSites(occurences);				
+				result = collectWordSites(occurences);
 				break;
 			};
 
@@ -182,9 +182,9 @@ public class InvertedIndex extends Configured implements Tool {
 		}
 
 		private Text collectWordSites(Iterable<Text> occurences) {
-			Set<Text> sites = new HashSet<Text>();
+			Set<String> sites = new HashSet<String>();
 			for (Text site : occurences) {
-				sites.add(site);
+				sites.add(site.toString());
 			}
 
 			Text joindSites = new Text(join(sites, ","));
