@@ -69,7 +69,7 @@ public class InvertedIndex extends Configured implements Tool {
 		private boolean caseSensitive = false;
 		private Set<String> patternsToSkip = new HashSet<String>();
 
-		// Create a regular expression pattern used to parse each line of input text on word boundaries. Word boundaries include spaces, tabs, and punctuation.
+		// Create a regular expression pattern used to parse each line of input text on word boundaries.
 		private static final Pattern WORD_BOUNDARY = Pattern.compile(" ");
 
 		@Override
