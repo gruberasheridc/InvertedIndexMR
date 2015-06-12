@@ -63,7 +63,7 @@ public class InvertedIndex extends Configured implements Tool {
 	private static final Logger LOG = Logger.getLogger(InvertedIndex.class);
 	private static final String WORD_MARKER = "W"; // Used to indicate that a string is a word.
 	private static final String URL_MARKER = "U"; // Used to indicate that a string is a URL.
-	private static final String WORD_TYPE_SEPERATOR = new String(new char[] { 128 });
+	private static final String WORD_TYPE_SEPERATOR = new String(new char[] { 127 });
 	private static final String WORD_SKIP_PATTERNS = "word.skip.patterns"; // system variable specifying if a list of word patterns to skip is provided.
 	private static final String SKIP_PATTERNS_FLAGE = "-skip"; // command line argument specifying if the skip pattern functionality should be active. 
 
