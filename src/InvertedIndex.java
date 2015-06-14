@@ -55,7 +55,7 @@ import org.apache.log4j.Logger;
  * 		5. STOP_WORDS_FILE.txt - A path to the text file from whom to load the list of word patterns that should be ignored during the job (mandatory if the -skip argument exists).
  * 								 Each line in the file should contain a single word which should be ignored when encountered during the job (e.g. a,and,or,!).
  *
- * Comments: The tool uses an external jar for URL analysis (org.apache.commons.validator.routines.UrlValidator). This jar should be added upon execution.
+ * Comments: The tool uses an external jar for URL analysis (org.apache.commons.validator.routines.UrlValidator). This jar should be added to the Hadoop classpath prior to the execution.
  *
  */
 public class InvertedIndex extends Configured implements Tool {
